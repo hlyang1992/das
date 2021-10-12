@@ -1,0 +1,10 @@
+numpy>=1.20.1
+path>=15.0.1
+jinja2>=2.11.2
+pandas>=1.2.1
+ase>=3.21.1
+netcdf4>=1.5.6
+spglib>=1.16.0
+fabric>=2.6.0
+setuptools>=50.3.1
+art>=5.2

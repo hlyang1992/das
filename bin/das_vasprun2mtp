@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+import argparse
+import logging
+
+from ase.data import atomic_numbers
+from ase.io.formats import string2index
+
+from das import AtomicDataset
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="parse vasprun.xml data for deepmd")
+    required_arguments = parser.add_argument_group("required named arguments")
+
+    required_arguments.add_argument("output_filename", type=str, help="output filename")
+    required_arguments.add_argument("data_path", type=str, nargs="+", help="data path")
+    required_arguments.add_argument(
+        "-e", "--unique_elements", type=str, nargs="+", help="unique elements", required=True,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-f", "--filename", type=str, default="vasprun.xml")
+    parser.add_argument("-i", "--index", type=str, default=None)
+    parser.add_argument("-s", "--step", type=int, default=1)
+    args = parser.parse_args()
+    # print(args)
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    output_filename = args.output_filename
+    data_path = args.data_path
+    filename = args.filename
+    verbose = args.verbose
+    index = args.index
+
+    unique_elements = args.unique_elements
+    unique_numbers = sorted([atomic_numbers[i] for i in unique_elements])
+
+    if verbose:
+        logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.ERROR)
+    logging.critical(f"data path: {data_path}")
+    logging.critical(f"deepmd_data_path: {output_filename}")
+    logging.critical(f"filename: {filename}")
+
+    dataset = AtomicDataset(unique_numbers)
+    logging.critical("Reading data...")
+    dataset.read_from_directories(data_path, filename)
+    if index is not None:
+        index_to_write = list(range(len(dataset)))[string2index(index)]
+    else:
+        index_to_write = None
+    dataset.write_mtp_data(output_filename, index_to_write)

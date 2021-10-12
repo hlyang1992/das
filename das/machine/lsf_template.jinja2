@@ -1,0 +1,35 @@
+#!/bin/bash
+#BSUB -q {{q_name}}
+#BSUB -n {{ncores}}
+{% if bad_nodes -%}
+{% for node in bad_nodes -%}
+#BSUB -R "hname!={{node}}"
+{% endfor %}
+{% endif %}
+{% if run_limit -%}
+#BSUB -W "{{run_limit}}"
+{% endif %}
+#BSUB -e %J.err
+#BSUB -o %J.out
+{% if ptile -%}
+#BSUB -R "span[ptile={{ ptile }}]"
+{% endif %}
+#BSUB -J {{job_name}}
+
+hostfile=`echo $LSB_DJOB_HOSTFILE`
+NP=`cat $hostfile | wc -l`
+cd $LS_SUBCWD
+
+work_path=$PWD
+
+
+{% for path in job_paths -%}
+
+cd {{path}}
+touch __start__
+{{sub_run_str}}
+touch __ok__
+cd ${work_path}
+
+{% endfor %}
+

@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import numpy as np
+# import matplotlib.pyplot as plt
+import argparse
+from path import Path
+
+from das import AtomicDataset
+from das.sampler.lmp_af_sampler import get_force_ambiguity
+from pymtp.core import MTPCalactor, PyConfiguration
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Calculate model ambiguity")
+    required_arguments = parser.add_argument_group("required named arguments")
+
+    required_arguments.add_argument("model_path", type=str)
+    required_arguments.add_argument("dat_path", type=str)
+    parser.add_argument("-s", "--skip_header", type=int, default=0)
+    args = parser.parse_args()
+    # print(args)
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    dat_path = args.dat_path
+    model_path = args.model_path
+    skip_header = args.skip_header
+    dat_path = Path(dat_path)
+    model_path = Path(model_path)
+    model_fns = list(model_path.walk("*.mtp"))
+
+    calc_set = [MTPCalactor(i) for i in model_fns]
+    datset = AtomicDataset.load(dat_path)
+    atoms_set = datset.ase_atoms
+    ee_list = []
+    for i, atoms in enumerate(atoms_set):
+        if i+1 <= skip_header:
+            continue
+        forces_set = []
+        for calc in calc_set:
+            c0 = PyConfiguration.from_ase_atoms(atoms)
+            calc.calc(c0)
+            forces_set.append(c0.force)
+        forces_set = np.array(forces_set, dtype=np.float64)
+        ee = np.max(get_force_ambiguity(forces_set))
+        ee_list.append(ee)
+        print(f"index: {i} ee: {ee:.4f}")
+
+    ee_list = np.array(ee_list)
+    print(
+        f"ee max/min/mean: {ee_list.max():.4f}  {ee_list.min():.4f}  {ee_list.mean():.4f}"
+    )

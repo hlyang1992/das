@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import argparse
+import logging
+from datetime import datetime
+
+from path import Path
+
+from das.driver import read_and_check_config, Driver
+from das.utils import get_ascii_text
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Dual Adaptive Sampling for Machine Learning Interatomic Potential"
+    )
+    required_arguments = parser.add_argument_group("required named arguments")
+
+    required_arguments.add_argument(
+        "config_dir", type=str, help="configuration directory"
+    )
+    required_arguments.add_argument("job_dir", type=str, help="job directory")
+    args = parser.parse_args()
+    # print(args)
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    config_path = args.config_dir
+    job_path = args.job_dir
+
+    print(get_ascii_text("DAS", font='block'))
+    job_dir = Path(job_path)
+    now = datetime.now()
+    if not job_dir.exists():
+        job_dir.mkdir_p()
+    log_fn = job_dir / f"mlp_sampler_{now.strftime('%Y-%m-%d:%H:%M:%S')}.log"
+
+    # create logger
+    formatter = logging.Formatter(
+        "%(asctime)s,%(msecs)d %(levelname)-8s [%(module)s:%(filename)s:%(lineno)d] %(message)s",
+        datefmt="%Y-%m-%d:%H:%M:%S",
+    )
+    logger = logging.getLogger('das')
+    logger.setLevel(logging.INFO)
+
+    fh = logging.FileHandler(log_fn)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    config_dir = Path(config_path)
+    config_name = config_dir / "conf.yaml"
+    params = read_and_check_config(config_name)
+
+    gen = Driver(params, config_dir, job_dir)
+    gen.run()

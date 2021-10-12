@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import sys
+
+from das import AtomicDataset
+
+if __name__ == "__main__":
+    f1 = sys.argv[1]
+    f2 = sys.argv[2]
+
+    d1 = AtomicDataset.load(f1)
+    d2 = AtomicDataset.load(f2)
+
+    # todo_dft.data = after_merge_dataset.data.loc[~before_merge_dataset.data.uid.isin(prev_dataset.data.uid)]
+    comm_data = d1.data.loc[d1.data.uid.isin(d2.data.uid)]
+    f1_unique = d1.data.loc[~d1.data.uid.isin(d2.data.uid)]
+    f2_unique = d2.data.loc[~d2.data.uid.isin(d1.data.uid)]
+
+    print(f"{len(comm_data)} configurations in {f1} and {f2}.")
+    print(f"{len(f1_unique)} configurations in {f1} (total {len(d1)}) .")
+    print(f"{len(f2_unique)} configurations in {f2} (total {len(d2)}) .")

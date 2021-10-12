@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import argparse
+from das.utils import generate_mtp_untrained_model
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate unfitted.mtp file")
+    required_arguments = parser.add_argument_group("required named arguments")
+
+    required_arguments.add_argument("species_count", type=int, help="species_count")
+    required_arguments.add_argument("index", type=int, help="index")
+    required_arguments.add_argument("min_dist", type=float, help="min_dist")
+    required_arguments.add_argument("max_dist", type=float, help="max_dist")
+
+    parser.add_argument("-o", "--output", type=str, help="output filename", default=None)
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    species_count = args.species_count
+    index = args.index
+    min_dist = args.min_dist
+    max_dist = args.max_dist
+    output = args.output
+    if output is None:
+        output = f"unfitted_{species_count}_{index}_{min_dist}_{max_dist}.mtp"
+
+    print(f"output to {output}")
+    mtp_model_str = generate_mtp_untrained_model(min_dist, max_dist, species_count, index)
+    with open(output, "w") as f0:
+        f0.write(mtp_model_str)

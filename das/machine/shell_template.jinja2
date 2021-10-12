@@ -1,0 +1,14 @@
+#!/bin/bash
+
+work_path=$PWD
+
+{% for path in job_paths -%}
+
+cd {{path}}
+touch __start__
+{{sub_run_str}}
+
+touch __ok__
+cd ${work_path}
+
+{% endfor %}

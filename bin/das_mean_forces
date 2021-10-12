@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import argparse
+
+import numpy as np
+from pymtp.core import MTPCalactor, PyConfiguration
+
+from das import Structure
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Calculate the mean forces over several ML-IP models")
+    required_arguments = parser.add_argument_group("required named arguments")
+
+    required_arguments.add_argument("-m", "--models", type=str, nargs="+", help="model files", required=True)
+    required_arguments.add_argument("-f", "--files", type=str, nargs="+", help="struct files", required=True)
+    required_arguments.add_argument("-t", "--filetype", type=str, help="file type", required=True)
+    required_arguments.add_argument("-e", "--unique_elements", type=str, nargs="+", help="unique elements")
+    parser.add_argument("-o", "--output", action="store_true", default=False)
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    strcut_files = args.files
+    models = args.models
+    filetype = args.filetype
+    unique_elements = args.unique_elements
+    output = args.output
+    if unique_elements is not None:
+        unique_numbers = Structure.unique_elements_to_numbers(unique_elements)
+    else:
+        unique_numbers = None
+    calc_set = [MTPCalactor(i) for i in models]
+    print(f"structure files: {strcut_files}")
+    for fn in strcut_files:
+        struct = Structure.from_file(fn)
+        atoms = struct.atoms
+        forces_set = []
+        for calc in calc_set:
+            c0 = PyConfiguration.from_ase_atoms(atoms, unique_numbers=unique_numbers)
+            calc.calc(c0)
+            forces_set.append(c0.force)
+        forces_set = np.array(forces_set, dtype=np.float)
+        mean_forces = np.mean(forces_set, axis=0)
+        if output:
+            fn_out = "force." + fn
+            np.savetxt(fn_out, mean_forces)
+            print(f"index: {fn}, output: {fn_out}")
+        else:
+            print(f"index: {fn}")
+            print(mean_forces)
+            print("=" * 20)

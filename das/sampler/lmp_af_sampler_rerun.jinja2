@@ -1,0 +1,29 @@
+variable input_dump_file string "force.0.dump"
+# variable out_dump_file string {{out_dump_file}}
+# variable mlip_ini string {{mlip_ini}}
+
+units metal
+boundary p p p 
+atom_style atomic
+
+box tilt large
+read_data data.lmp
+
+# mass data
+{% for type, mass in mass_dict.items() -%}
+mass {{type}} {{mass}}
+{% endfor %}
+
+pair_style mlip ${mlip_ini}
+pair_coeff * *
+
+neighbor 2.0 bin 
+neigh_modify delay 10 check yes 
+
+reset_timestep 0
+
+compute pe all pe/atom
+dump 1 all netcdf 1 ${out_dump_file} id type x y z fx fy fz c_pe
+dump_modify 1 sort id
+
+rerun ${input_dump_file} dump x y z

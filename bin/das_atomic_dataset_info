@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import argparse
+from signal import signal, SIGPIPE, SIG_DFL
+
+from das import AtomicDataset
+
+# ignore broken pipe error
+signal(SIGPIPE, SIG_DFL)
+
+
+def _parse_slice(s):
+    a = [int(e) if e.strip() else None for e in s.split(":")]
+    return slice(*a)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Calculate model uncertainties")
+
+    parser.add_argument("fn", type=str)
+    parser.add_argument("-n", "--max_print_n", type=int, default=None)
+    parser.add_argument("-i", action="store_true", default=False)
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    fn = args.fn
+    max_print_n = args.max_print_n
+    index = args.i
+
+    dataset = AtomicDataset.load(fn)
+    uid = dataset.data.uid.values
+
+    print(f"Number of configurations in dataset: {len(uid)}")
+    if max_print_n is None:
+        max_print_n = len(uid)
+    for i, ii in enumerate(uid[:max_print_n]):
+        if index:
+            print(i, ii)
+        else:
+            print(ii)

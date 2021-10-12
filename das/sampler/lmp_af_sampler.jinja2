@@ -1,0 +1,57 @@
+variable dt equal 0.001
+variable T equal {{temp}}
+variable StepNVT equal {{steps}} 
+variable PreStep equal {{prev_steps}}
+variable random equal {{random}}
+
+variable nevery equal {{nevery}}
+
+variable out_dump_file_0 string force.0.dump 
+# variable out_dump_file string {{out_dump_file}}
+# variable mlip_ini string {{mlip_ini}}
+
+units metal
+boundary p p p 
+atom_style atomic
+
+box tilt large
+read_data data.lmp
+
+# mass data
+{% for type, mass in mass_dict.items() -%}
+mass {{type}} {{mass}}
+{% endfor %}
+
+pair_style mlip ${mlip_ini}
+pair_coeff * *
+
+neighbor 2.0 bin 
+neigh_modify delay 10 check yes 
+
+timestep    ${dt}
+variable Tdamp equal "v_dt * 100"
+variable Pdamp equal "v_dt * 1000"
+velocity	all create ${T} ${random} mom yes rot yes dist gaussian
+thermo 100
+
+{% if press is not none %}
+fix 100 all npt temp ${T} ${T} ${Tdamp} iso {{press}} {{press}} ${Pdamp}
+{% else %}
+fix 100 all nvt temp ${T} ${T} ${Tdamp}
+{% endif %}
+
+velocity all scale ${T}
+velocity all zero linear
+
+run		${PreStep}
+
+reset_timestep 0
+
+compute pe all pe/atom
+dump 0 all custom ${nevery} ${out_dump_file_0} id type x y z fx fy fz c_pe
+dump_modify 0 format line "%6d %3d %20.15e %20.15e %20.15e %20.15e %20.15e %20.15e %20.15e" sort id
+
+dump 1 all netcdf ${nevery} ${out_dump_file} id type x y z fx fy fz c_pe
+dump_modify 1 sort id
+
+run		${StepNVT}

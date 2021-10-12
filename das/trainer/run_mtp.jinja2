@@ -1,0 +1,15 @@
+#!/bin/bash
+
+unfitted_mtp=unfitted.mtp
+fitted_mtp=fitted.mtp
+dat_set=trainset.cfg
+
+args="${unfitted_mtp} ${dat_set} --trained-pot-name=${fitted_mtp} "
+args="${args} --energy-weight={{ energy_weight|default(1.0) }}"
+args="${args} --force-weight={{ force_weight|default(0.01) }}"
+args="${args} --stress-weight={{ stress_weight|default(0.001) }}"
+args="${args} --max-iter={{ max_iter|default(1000) }}"
+args="${args} --bfgs-conv-tol={{ bfgs_conv_tol|default(1e-3)}}"
+args="${args} --update-mindist"
+
+{{ mlip_cmd }} ${args} | tee fitting.log

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# initial run 
+
+COMMAND_0="{{ lmp_cmd }}"
+COMMAND="${COMMAND_0} -in in.lmp -var out_dump_file {{dump_mlip_fns[0][0]}} -var mlip_ini {{dump_mlip_fns[0][1]}}"
+$COMMAND > jobs_{{dump_mlip_fns[0][1]}}.out 2>&1
+
+# rerun
+
+{% for dd, mm in dump_mlip_fns[1:] -%}
+
+COMMAND="${COMMAND_0}  -in in_rerun.lmp -var out_dump_file {{dd}}  -var mlip_ini {{mm}}"
+$COMMAND > jobs_{{mm}}.out 2>&1
+
+{% endfor %}
+
+
+
+{{python_cmd}} calc_ensemble_ambiguity.py

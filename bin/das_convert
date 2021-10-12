@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+import argparse
+import sys
+
+from path import Path
+import spglib as spg
+from das import Structure
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="convert between structure files")
+
+    parser.add_argument("fin", type=str, help="input filename")
+    parser.add_argument("-o", "--output_filename", type=str, default=None)
+    parser.add_argument("-if", "--input_format", type=str, default="vasp")
+    parser.add_argument("-of", "--output_format", type=str, default="vasp")
+    parser.add_argument("-d", "--dim", type=float, default=None, nargs="+")
+    parser.add_argument("-c", "--conv", action="store_true")
+    parser.add_argument("-p", "--prim", action="store_true")
+    parser.add_argument("-r", "--refine", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-t", "--tolerance", type=float, default=1.0e-5)
+    parser.add_argument(
+        "-e", "--unique_elements", type=str, nargs="+", help="unique elements", default=None,
+    )
+    args = parser.parse_args()
+    # print(args)
+    return args
+
+
+def get_output_filename(stem, mode, output_format):
+    if output_format == "lmp":
+        ext = "lmp"
+    else:
+        ext = "vasp"
+    return f"{stem}.{mode}.{ext}"
+
+
+def write_structure(structure, filename, unique_numbers=None):
+    p0 = Path(filename)
+    if p0.ext == ".lmp":
+        structure.write_lmp_data(filename, unique_numbers)
+    else:
+        structure.write_poscar(filename)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    fin = Path(args.fin)
+    symprec = args.tolerance
+    input_format = args.input_format
+    output_format = args.output_format
+    output_filename = args.output_filename
+    verbose = args.verbose
+
+    dim = args.dim
+    conv = args.conv
+    prim = args.prim
+    refine = args.refine
+    mode_set = [True if dim else False, conv, prim, refine]
+    if sum(mode_set) > 1:
+        print(f"only support one mode at a time, dim:{mode_set[0]}, conv:{conv}, prim:{prim}, refine:{refine}")
+        sys.exit()
+
+    unique_elements = args.unique_elements
+    if unique_elements is not None:
+        unique_numbers = Structure.unique_elements_to_numbers(unique_elements)
+    else:
+        unique_numbers = None
+
+    # read structure
+    if input_format == "lmp":
+        s0: Structure = Structure.from_lmp_dat_file(fin)
+    else:
+        s0: Structure = Structure.from_file(fin)
+
+    if verbose:
+        s0._max_show_items = 3
+        print(s0)
+        print("Crystal Symmetry:")
+        print(s0.show_symmetry_info())
+
+    s1 = s0
+    mode = "format"
+    # create supercell
+    if dim is not None:
+        s1 = s0.get_supercell(dim)
+        s1.sort()
+        mode = "super"
+
+    # get supercell
+    if conv:
+        mode = "conv"
+        s1 = s0.get_conventional_structure()
+        s1.sort()
+
+    # get supercell
+    if prim:
+        mode = "prim"
+        s1 = s0.get_primitive_structure()
+        s1.sort()
+
+    if refine:
+        mode = "refine"
+        print(f"to be supported.")
+        # TODO: refine cell
+        # (bravais_lattice, bravais_pos, bravais_numbers) = spg.refine_cell(s0.spg_cell, symprec)
+        # print(bravais_lattice, bravais_pos, bravais_numbers)
+        sys.exit()
+
+    if output_filename is None:
+        output_filename = get_output_filename(fin.stem, mode, output_format)
+
+    write_structure(s1, output_filename, unique_numbers)
+    print(f"read from {fin}, write to {output_filename}.")

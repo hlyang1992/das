@@ -1,0 +1,5 @@
+include das/machine/*.jinja2
+include das/sampler/*.jinja2
+include das/trainer/*.jinja2
+include das/utils/untrained_mtps/*.mtp
+include das/utils/untrained_mtps/*.jinja2
