@@ -158,8 +158,8 @@ class LmpAmbiguitySampler(Worker):
         for ii, atoms in enumerate(atoms_lists):
             for jj, params in enumerate(params_list):
                 tmp_params = deepcopy(params)
-                if tmp_params.get("random", None) is None:
-                    tmp_params["random"] = np.random.randint(0, 10000000)
+                # if tmp_params.get("random", None) is None:
+                tmp_params["random"] = np.random.randint(0, 10000000)
                 tmp_path = self.run_input_dir / f"{ii}_{jj}"
                 tmp_path.mkdir_p()
                 lmp_data_fn = tmp_path / "data.lmp"
